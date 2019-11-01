@@ -1,4 +1,9 @@
-;; (declaim (ftype (function (fixnum) (values fixnum &optional)) fact))
+(declaim (ftype (function (fixnum) (values fixnum &optional)) fact))
+(defun fact (n)
+  (declare (type fixnum n))
+  (if (<= n 1) 1
+      (* n (fact (1- n)))))
+
 (defun fact-r (n)
   (declare (type fixnum n))
   (if (<= n 1) 1
