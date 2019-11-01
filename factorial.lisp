@@ -15,3 +15,9 @@
 	     (if (<= n 1) acc
 		 (sub-fact (1- n) (* n acc)))))
     (sub-fact n 1)))
+
+(defun fact-dotimes (n)
+  (let ((result 1))
+    (dotimes (i n)
+      (setq result (* result (1+ i))))
+    result))
