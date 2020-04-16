@@ -2,7 +2,7 @@
 
 ;;; line searches
 (defun golden-divide-method (init end func &key (eps 1.0d-10))
-  "searching for a minimum of downward-convex function in a range from init to end"
+  "search for a minimum of downward-convex function in a range from init to end"
   (let* ((left-edge init)
 	 (right-edge end)
 	 (ratio-golden (/ (- (sqrt 5.0d0) 1.0d0) 2.0d0))
@@ -39,7 +39,7 @@
 
 
 (defun bisection-method (init end func &key (eps 1.0d-10))
-  "finding root by using bisection method in a range from init to end"
+  "find root by using bisection method in a range from init to end"
   (let* ((edge-l init)
 	 (edge-r end)
 	 (middle (/ (+ init end) 2.0))
@@ -61,7 +61,7 @@
 
 
 (defun newtons-method-primitive (init-appro func &key (eps 1.0d-10))
-  "primitive implementation of newton's method starting from init-appro"
+  "primitive implementation of Newton's method starting from init-appro"
   (let ((curr init-appro)
 	(next 0.0))
     (labels ((deriv-func (point func)
@@ -77,10 +77,10 @@
 	       next (next-appro curr func))))))
 
 
-;;; ordinary differential equation solvers
-(defun ode-euler-method (func-t-x init-value interval num-of-steps &optional (marker-of-dat-file 0))
-  "solving ordinary differential equation, dx/dt = f(t, x), by using euler method"
-  (with-open-file (fp (format nil "~A~A~A~A" (directory-namestring (truename ".")) "ode-euler-method-" marker-of-dat-file ".dat")
+;;; first-order ordinary differential equation solvers
+(defun plot-first-order-ode (method func-of-time-value init-value interval-time num-of-steps &optional (marker-of-dat-file 0))
+  "solve first-order ordinary differential equation, dx/dt = f(t, x), using designated method and plot data to file"
+  (with-open-file (fp (format nil "~A~A-~A-~A.dat" (directory-namestring (truename ".")) "ode-fo" method marker-of-dat-file)
 		      :direction :output
 		      :if-exists :supersede
 		      :if-does-not-exist :create)
@@ -88,11 +88,41 @@
 	  (curr-value init-value))
       (dotimes (i num-of-steps)
 	(format fp "~a~t~a~%"  curr-time curr-value)
-	(incf curr-time interval)
-	(setf curr-value (+ curr-value (* interval (funcall func-t-x curr-time curr-value))))))))
+	(setf (values curr-time curr-value)
+	      (funcall method func-of-time-value curr-time curr-value interval-time))))))
+
+(defun euler-method (func-of-time-value curr-time curr-value interval-time)
+  "calculate next (time, value) using Euler method for first-order ordinary differential equation, dx/dt = f(t, x)"
+  (values (incf curr-time interval-time)
+	  (incf curr-value (* interval-time (funcall func-of-time-value
+						     curr-time
+						     curr-value)))))
 
 (defun test-euler-method ()
   (labels ((test-func ()
 	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x)))))
-    (ode-euler-method (test-func) (float 1/100) (float 1/250) 250 250)
-    (ode-euler-method (test-func) (float 1/100) (float 1/500) 500 500)))
+    (plot-first-order-ode 'euler-method (test-func) (float 1/100) (float 1/200) 200 200)
+    (plot-first-order-ode 'euler-method (test-func) (float 1/100) (float 1/400) 400 400)))
+
+(defun runge-kutta-method (func-of-time-value curr-time curr-value interval-time)
+  "calculate next (time, value) using fourth-order Runge--Kutta method with four-stages for first-order ordinary differential equation, dx/dt = f(t, x)"
+  (let* ((k_1 (* interval-time (funcall func-of-time-value
+					curr-time
+					curr-value)))
+	 (k_2 (* interval-time (funcall func-of-time-value
+					(+ curr-time (/ interval-time 2.0))
+					(+ curr-value (/ k_1 2.0)))))
+	 (k_3 (* interval-time (funcall func-of-time-value
+					(+ curr-time (/ interval-time 2.0))
+					(+ curr-value (/ k_2 2.0)))))
+	 (k_4 (* interval-time (funcall func-of-time-value
+					(+ curr-time interval-time)
+					(+ curr-value k_3)))))
+    (values (incf curr-time interval-time)
+	    (incf curr-value (/ (+ k_1 (* 2 k_2) (* 2 k_3) k_4) 6.0)))))
+
+(defun test-runge-kutta-method ()
+  (labels ((test-func ()
+	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x)))))
+    (plot-first-order-ode 'runge-kutta-method (test-func) (float 1/100) (float 1/200) 200 200)
+    (plot-first-order-ode 'runge-kutta-method (test-func) (float 1/100) (float 1/400) 400 400)))
