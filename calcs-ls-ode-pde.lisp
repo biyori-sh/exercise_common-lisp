@@ -77,9 +77,18 @@
 
 
 ;;; first-order ordinary differential equation solvers
+;; make "graph-cl/" in current directory
+(let ((dir (merge-pathnames #P"graph-cl/" (truename "./"))))
+  (ensure-directories-exist dir))
+
 (defun plot-first-order-ode (method func-of-time-value init-value interval-time num-of-steps &optional (marker-of-dat-file 0))
   "solve first-order ordinary differential equation, dx/dt = f(t, x), using designated method and plot data to file"
-  (with-open-file (fp (format nil "~A~A-~A-~A.dat" (directory-namestring (truename ".")) "ODE-FO" method marker-of-dat-file)
+  (with-open-file (fp (format nil "~A~A~A-~A-~A.dat"
+			      (directory-namestring (truename "./"))
+			      "graph-cl/"
+			      "ODE-FO"
+			      method
+			      marker-of-dat-file)
 		      :direction :output
 		      :if-exists :supersede
 		      :if-does-not-exist :create)
