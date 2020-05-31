@@ -215,4 +215,4 @@
 	    (monte-carlo-integral (unit-3dim-ball) '(-1 -1) '(1 1) 1000000
 				  :constraint (in-unit-disk)))
       (format t "Integrated value: (exact) 4*pi/3 = 4.18879..., (MC) ~6Fpm~,5F(1sigma)~%" value stdev)
-      (format t "Constrainted area: (exact) pi, (MC) ~6Fpm~,5F(1simga)~%" estimated-vol vol-stdev))))
+      (format t "Area: (exact) pi, (MC) ~6Fpm~,5F(1simga)~%" estimated-vol vol-stdev))))
