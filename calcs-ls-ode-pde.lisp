@@ -78,80 +78,144 @@
 	       next (next-appro curr func))))))
 
 
-;;; first-order ordinary differential equation solvers
+;;; first-order ordinary differential equation solvers for one dimension
 ;; make "graph-cl/" in current directory
 (let ((dir (merge-pathnames #P"graph-cl/" (truename "./"))))
   (ensure-directories-exist dir))
 
-(defun plot-first-order-ode (method func-of-time-value init-value interval-time num-of-steps &optional (marker-of-dat-file 0))
+(defun plot-first-order-ode (method func-of-time-position init-position interval-time num-of-steps &optional (marker-of-dat-file 0))
   "solve first-order ordinary differential equation, dx/dt = f(t, x), using designated method and plot data to file"
   (with-open-file (fp (format nil "~A~A~A-~A-~A.dat"
 			      (directory-namestring (truename "./"))
 			      "graph-cl/"
-			      "ODE-FO"
+			      "first-order-ODE"
 			      method
 			      marker-of-dat-file)
 		      :direction :output
 		      :if-exists :supersede
 		      :if-does-not-exist :create)
     (let ((curr-time 0.0)
-	  (curr-value init-value))
+	  (curr-position init-position))
       (dotimes (i num-of-steps)
-	(format fp "~A~T~A~%"  curr-time curr-value)
-	(setf (values curr-time curr-value)
-	      (funcall method func-of-time-value curr-time curr-value interval-time))))))
+	(format fp "~A~T~A~%"  curr-time curr-position)
+	(setf (values curr-time curr-position)
+	      (funcall method func-of-time-position curr-time curr-position interval-time))))))
 
-(defun euler-method (func-of-time-value curr-time curr-value interval-time)
+(defun euler-method (func-of-time-position curr-time curr-position interval-time)
   "calculate next (time, value) using Euler method for first-order ordinary differential equation, dx/dt = f(t, x)"
   (values (+ curr-time interval-time)
-	  (+ curr-value (* interval-time (funcall func-of-time-value
-						  curr-time
-						  curr-value)))))
+	  (+ curr-position (* interval-time (funcall func-of-time-position
+						     curr-time
+						     curr-position)))))
 
-(defun implicit-euler-method (func-of-time-value curr-time curr-value interval-time)
+(defun implicit-euler-method (func-of-time-position curr-time curr-position interval-time)
   "calculate next (time, value) using implicit Euler method for first-order ordinary differential equation; be implemented using newtons-method-primitive (central difference) and can occur zero-division in some situations (insufficient accuracy,  too large or small derivative, and ...)"
   (let ((next-time (+ interval-time curr-time)))
     (values next-time
 	    (newtons-method-primitive
-	     curr-value
-	     (lambda (next-value)
-	       (- next-value curr-value (* interval-time
-					   (funcall func-of-time-value
-						    next-time
-						    next-value))))))))
+	     curr-position
+	     (lambda (next-position)
+	       (- next-position curr-position (* interval-time
+						 (funcall func-of-time-position
+							  next-time
+							  next-position))))))))
 
-(defun runge-kutta-method (func-of-time-value curr-time curr-value interval-time)
+(defun runge-kutta-method (func-of-time-position curr-time curr-position interval-time)
   "calculate next (time, value) using fourth-order Runge--Kutta method with four-stages for first-order ordinary differential equation, dx/dt = f(t, x)"
-  (let* ((k_1 (* interval-time (funcall func-of-time-value
+  (let* ((k_1 (* interval-time (funcall func-of-time-position
 					curr-time
-					curr-value)))
-	 (k_2 (* interval-time (funcall func-of-time-value
+					curr-position)))
+	 (k_2 (* interval-time (funcall func-of-time-position
 					(+ curr-time (/ interval-time 2.0))
-					(+ curr-value (/ k_1 2.0)))))
-	 (k_3 (* interval-time (funcall func-of-time-value
+					(+ curr-position (/ k_1 2.0)))))
+	 (k_3 (* interval-time (funcall func-of-time-position
 					(+ curr-time (/ interval-time 2.0))
-					(+ curr-value (/ k_2 2.0)))))
-	 (k_4 (* interval-time (funcall func-of-time-value
+					(+ curr-position (/ k_2 2.0)))))
+	 (k_4 (* interval-time (funcall func-of-time-position
 					(+ curr-time interval-time)
-					(+ curr-value k_3)))))
+					(+ curr-position k_3)))))
     (values (+ curr-time interval-time)
-	    (+ curr-value (/ (+ k_1 (* 2 k_2) (* 2 k_3) k_4) 6.0)))))
+	    (+ curr-position (/ (+ k_1 (* 2 k_2) (* 2 k_3) k_4) 6.0)))))
 
-;; some examples
+
+;;; system of first-order ordinary differential equations solvers
+(defun plot-first-order-odes (method list-funcs init-values interval-step num-of-steps &optional (marker-of-dat-file 0))
+  (with-open-file (fp (format nil "~A~A~A-~A-~A.dat"
+			      (directory-namestring (truename "./"))
+			      "graph-cl/"
+			      "ODEs"
+			      method
+			      marker-of-dat-file)
+		      :direction :output
+		      :if-exists :supersede
+		      :if-does-not-exist :create)
+    (let ((curr-values init-values))
+      (dotimes (i num-of-steps)
+	(dolist (value curr-values) (format fp "~A~T" value))
+	(format fp "~%")
+	(setf curr-values
+	      (funcall method list-funcs curr-values interval-step))))))
+
+(defun multi-euler-method (list-funcs curr-values interval-step)
+  (let ((result-rev nil))
+    (dolist (func list-funcs (mapcar #'+ curr-values (reverse result-rev)))
+      (setf result-rev (cons (* interval-step (apply func curr-values)) result-rev)))))
+
+(defun multi-runge-kutta-method (list-funcs curr-values interval-step)
+  (let ((k1 nil)
+	(k2 nil)
+	(k3 nil)
+	(k4 nil))
+    ;; k1
+    (dolist (func list-funcs)
+      (setf k1 (cons (* interval-step (apply func curr-values))	k1)))
+    (setf k1 (reverse k1))
+    ;; k2
+    (dolist (func list-funcs)
+      (setf k2 (cons (* interval-step (apply func (mapcar (lambda (x y) (+ x (/ y 2.0))) curr-values k1))) k2)))
+    (setf k2 (reverse k2))
+    ;; k3
+    (dolist (func list-funcs)
+      (setf k3 (cons (* interval-step (apply func (mapcar (lambda (x y) (+ x (/ y 2.0))) curr-values k2))) k3)))
+    (setf k3 (reverse k3))
+    ;; k4
+    (dolist (func list-funcs)
+      (setf k4 (cons (* interval-step (apply func (mapcar #'+ curr-values k3))) k4)))
+    (setf k4 (reverse k4))
+    ;; return
+    (mapcar (lambda (curr a b c d) (+ curr (/ (+ a (* 2.0 b) (* 2.0 c) d) 6.0)))
+	    curr-values k1 k2 k3 k4)))
+
+;;; some examples
 (defun example-euler-method ()
   (labels ((test-func ()
-	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x)))))
+	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x (* 0 val-t))))))
     (plot-first-order-ode 'euler-method (test-func) (float 1/100) (float 1/200) 200 200)
     (plot-first-order-ode 'euler-method (test-func) (float 1/100) (float 1/400) 400 400)))
 
 (defun example-implicit-euler-method ()
   (labels ((test-func ()
-	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x)))))
+	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x (* 0 val-t))))))
     (plot-first-order-ode 'implicit-euler-method (test-func) (float 1/100) (float 1/200) 200 200)
     (plot-first-order-ode 'implicit-euler-method (test-func) (float 1/100) (float 1/400) 400 400)))
 
 (defun example-runge-kutta-method ()
   (labels ((test-func ()
-	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x)))))
+	     (lambda (val-t val-x) (* 500 val-x val-x (- 1 val-x (* 0 val-t))))))
     (plot-first-order-ode 'runge-kutta-method (test-func) (float 1/100) (float 1/200) 200 200)
     (plot-first-order-ode 'runge-kutta-method (test-func) (float 1/100) (float 1/400) 400 400)))
+
+(defun example-rk-method-pendulum ()
+  (labels ((pendulum-func (k)
+	     (list (lambda (tau angle vel) 1)
+		   (lambda (tau angle vel) vel)
+		   (lambda (tau angle vel) (- (* k (sin angle)))))))
+    (plot-first-order-odes 'multi-runge-kutta-method (pendulum-func 1.0) '(0.0 -1.0 1.75) 1.0e-1 200 "pendulum1")))
+
+(defun example-rk-method-mathieu ()
+  (labels ((mathieu-func (delta epsilon bias alpha n)
+	     (list (lambda (tau pos vel) 1)
+		   (lambda (tau pos vel) vel)
+		   (lambda (tau pos vel) (- bias (* alpha (expt pos n))
+					    (* pos (+ delta (* epsilon (cos tau)))))))))
+    (plot-first-order-odes 'multi-runge-kutta-method (mathieu-func 1.5 2.0 0.5 1.0 3) '(0.0 1.0 0.0) 5.0e-2 4000 "mathieu3")))
