@@ -12,6 +12,32 @@
       (dotimes (j col) (setf (aref m i j) (random 1.0))))
     m))
 
+(defun make-complex-random-matrix (row col)
+  (let ((m (make-array (list row col))))
+    (dotimes (i row)
+      (dotimes (j col) (setf (aref m i j) (complex (- (random 2.0) 1.0)
+						   (- (random 2.0) 1.0)))))
+    m))
+
+(defun transpose (m)
+  (destructuring-bind (row col) (matrix-dimensions m)
+    (let ((sub-m (make-matrix col row)))
+      (dotimes (i row)
+	(dotimes (j col)
+	  (setf (aref sub-m j i) (aref m i j))))
+      sub-m)))
+
+(defun conjugate-matrix (m)
+  (destructuring-bind (row col) (matrix-dimensions m)
+    (let ((sub-m (make-matrix row col)))
+      (dotimes (i row)
+	(dotimes (j col)
+	  (setf (aref sub-m i j) (conjugate (aref m i j)))))
+      sub-m)))
+
+(defun hermitian-conj (m)
+  (transpose (conjugate-matrix m)))
+
 (defun matrix-dimensions (m)
   (array-dimensions m))
 
