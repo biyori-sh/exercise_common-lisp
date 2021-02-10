@@ -1,36 +1,43 @@
 (defun make-matrix (row col &key (initial-element 0.0) (initial-contents nil))
+  "make a (row col)-matrix."
   (if (null initial-contents)
       (make-array (list row col) :initial-element initial-element)
       (make-array (list row col) :initial-contents initial-contents)))
 
 (defun make-id-matrix (order)
+  "make an identity matrix."
   (let ((m (make-array (list order order) :initial-element 0.0)))
     (dotimes (i order) (setf (aref m i i) 1.0))
     m))
 
 (defun matrix-dimensions (m)
+  "dimensions of m."
   (array-dimensions m))
 
 (defun transpose (m)
+  "make a transpose matrix."
   (destructuring-bind (row col) (matrix-dimensions m)
     (let ((sub-m (make-matrix col row)))
       (dotimes (i row)
-	(dotimes (j col)
-	  (setf (aref sub-m j i) (aref m i j))))
+        (dotimes (j col)
+          (setf (aref sub-m j i) (aref m i j))))
       sub-m)))
 
 (defun conjugate-matrix (m)
+  "make a matrix composed of complex conjugate numbers."
   (destructuring-bind (row col) (matrix-dimensions m)
     (let ((sub-m (make-matrix row col)))
       (dotimes (i row)
-	(dotimes (j col)
-	  (setf (aref sub-m i j) (conjugate (aref m i j)))))
+        (dotimes (j col)
+          (setf (aref sub-m i j) (conjugate (aref m i j)))))
       sub-m)))
 
 (defun hermitian-conj (m)
+  "make a hermitian conjugate matrix."
   (transpose (conjugate-matrix m)))
 
 (defun copy-matrix (m)
+  "copy a matrix."
   (destructuring-bind (row col) (matrix-dimensions m)
     (let ((mt (make-array (list row col))))
       (dotimes (i row)
@@ -38,9 +45,10 @@
       mt)))
 
 (defun make-real-random-matrix (row col &key (symmetric? nil))
+  "make a (row col)-matrix comoposed of real random numbers. make it symmetric if and only if symmetric? is not nil and row and col are equal."
   (let ((m (make-array (list row col)))
         (tmp 0.0))
-    (if (null symmetric?)
+    (if (or (null symmetric?) (/= row col))
         (dotimes (i row)
           (dotimes (j col)
             (setf (aref m i j) (random 1.0))))
@@ -53,9 +61,11 @@
     m))
 
 (defun make-complex-random-matrix (row col &key (hermitian? nil))
+  "make a (row col)-matrix comoposed of complex random numbers. make it hermitian
+if and only if hermitian? is not nil and row and col are equal."
   (let ((m (make-array (list row col)))
         (tmp (complex 0.0)))
-    (if (null hermitian?)
+    (if (or (null hermitian?) (/= row col))
         (dotimes (i row)
           (dotimes (j col)
             (setf (aref m i j) (complex (random 1.0) (random 1.0)))))
@@ -67,14 +77,16 @@
             (setf (aref m j i) (conjugate tmp)))))
     m))
 
-(defun set-id-mat (m)
+(defun set-id-mat! (m)
+  "set m to a identity matrix destructively."
   (destructuring-bind (row col) (matrix-dimensions m)
     (dotimes (i row)
       (dotimes (j col)
-	(setf (aref m i j) 0.0)))
+        (setf (aref m i j) 0.0)))
     (dotimes (k (min row col)) (setf (aref m k k) 1.0))))
 
 (defun lud (m)
+  "decompose m to upper- and lower-triangular matrix recursively."
   (destructuring-bind (row col) (matrix-dimensions m)
     (when (= row col)
       (let ((l (make-id-matrix row))
