@@ -3,32 +3,26 @@
 ## factorial.lisp
     Calculate a factorial.
 
-
 ## fibonacci.lisp
-    Calculate a fibonacci number.
-
+Calculate a fibonacci number.
 
 ## fizzbuzz.lisp
-    Some ordinary fizzbuzzs and the one for any number.
+Some ordinary fizzbuzzs and the one for any number.
 
 ## lud.lisp
-    The LU decomposition.
+The LU decomposition.
 
 ## monte-carlo-integral.lisp
-    An integral by using the Monte Carlo method.
-
+An integral by using the Monte Carlo method.
 
 ## optimization.lisp
-    The golden-section search for finding a minimum and the bisection search for finding a root.
-
+The golden-section search for finding a minimum and the bisection search for finding a root.
 
 ## ordinary-diff-eq.lisp
-    The explicit and implicit Euler method and the explicit Runge--Kutta method.
-
+The explicit and implicit Euler method and the explicit Runge--Kutta method.
 
 ## pi-random-stat.lisp
-    Calculate the pi by using the Monte Carlo method.
-
+Calculate the pi by using the Monte Carlo method.
 
 ## system-of-ODEs.lisp
-    Some Runge--Kutta methods for higher-order ordinary or system of differential equations.
+Some Runge--Kutta methods for higher-order ordinary or system of differential equations.
