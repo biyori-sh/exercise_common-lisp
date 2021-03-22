@@ -1,0 +1,43 @@
+(defun fizzbuzz-simple (n)
+  "simple implementation"
+  (do ((i 1 (1+ i)))
+      ((> i n))
+    (cond ((and (= (mod i 3) 0) (= (mod i 5) 0)) (format t "fizzbuzz~%"))
+	  ((= (mod i 3) 0) (format t "fizz~%"))
+	  ((= (mod i 5) 0) (format t "buzz~%"))
+	  (t (format t "~D~%" i)))))
+
+(defun fizzbuzz-when (n)
+  (labels ((fizz-buzz-integer (k)
+	     (let ((p 0))
+	       (format t "~T")
+	       (when (zerop (mod k 3)) (format t "fizz") (incf p))
+	       (when (zerop (mod k 5)) (format t "buzz") (incf p))
+	       (when (zerop p) (format t "~A" k)))))
+    (dotimes (i n)
+      (fizz-buzz-integer (1+ i)))))
+
+(defun fizzbuzz-strict-nor (n)
+  "implementation using nor with strict evaluation"
+  (labels ((princ-strict-nor (k &rest tests)
+	     (when (every #'null tests) (princ k))))
+    (do ((i 1 (1+ i)))
+	((> i n))
+      (princ-strict-nor i
+		      (if (= (mod i 3) 0) (princ "fizz"))
+		      (if (= (mod i 5) 0) (princ "buzz")))
+      (format t "~%"))))
+
+(defmacro generalized-fizzbuzz (n &rest pairs-div-str)
+  "generalized implementaion based on fizzbuzz-strict-nor"
+  (let ((cnt (gensym))
+	(lst-if nil))
+    (dolist (lst (sort pairs-div-str #'> :key #'car))
+      (push `(if (= (mod ,cnt ,(car lst)) 0) (princ ,(cadr lst)))
+	    lst-if))
+    `(labels ((princ-strict-nor (k &rest tests)
+		(when (every #'null tests) (princ k))))
+       (do ((,cnt 1 (1+ ,cnt)))
+	   ((> ,cnt ,n))
+	 (princ-strict-nor ,cnt ,@lst-if)
+   	 (format t "~%")))))

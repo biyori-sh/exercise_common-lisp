@@ -3,12 +3,13 @@
   (if (<= n 1) 1
       (* n (fact (1- n)))))
 
-(declaim (ftype (function (integer) integer) fact-opt))
+(declaim (ftype (function (integer) integer) fact-opt)
+         (inline fact-opt))
 (defun fact-opt (n)
   "factorial calclation in type:integer"
-  (declare (type integer n))
-  (if (<= n 1) 1
-      (* n (fact-fn (1- n)))))
+  (declare (integer n))
+  (the integer (if (<= n 1) 1
+                   (* n (fact-opt (1- n))))))
 
 (defun fact-tro (n)
   "tail recusion"

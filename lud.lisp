@@ -86,13 +86,14 @@ if and only if hermitian? is not nil and row and col are equal."
     (dotimes (k (min row col)) (setf (aref m k k) 1.0))))
 
 (defun lud (m)
-  "decompose m to upper- and lower-triangular matrix recursively."
+  "decompose a square matrix, m, to lower- and upper-triangular matrix, l and u, recursively. det m = det u."
   (destructuring-bind (row col) (matrix-dimensions m)
     (when (= row col)
       (let ((l (make-id-matrix row))
             (u (make-matrix row row))
             (mt (copy-matrix m)))
         (labels ((lud-sub (ma ml mu index dim-1)
+                   (declare (inline lud-sub))
                    (if (>= index dim-1)
                        (progn (setf (aref mu dim-1 dim-1)
                                     (aref ma dim-1 dim-1))

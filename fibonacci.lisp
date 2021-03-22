@@ -10,8 +10,8 @@
   "practice to optimize"
   (declare (type integer n)
 	   (optimize (speed 3) (safety 0) (debug 0)))
-  (if (<= n 1) n
-      (+ (fib-opt (- n 1)) (fib-opt (- n 2)))))
+  (the integer (if (<= n 1) n
+                   (+ (fib-opt (- n 1)) (fib-opt (- n 2))))))
 
 (defun fib-tr (n)
   "tail recusion"
