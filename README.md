@@ -1,7 +1,7 @@
 # exercise_common-lisp
 
 ## factorial.lisp
-    Calculate a factorial.
+Calculate a factorial.
 
 ## fibonacci.lisp
 Calculate a fibonacci number.
