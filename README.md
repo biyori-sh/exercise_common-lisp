@@ -9,6 +9,9 @@ Calculate a fibonacci number.
 ## fizzbuzz.lisp
 Some ordinary fizzbuzzs and the one for any number.
 
+## interval-arithmetic.lisp
+Macro for changing the rounding-mode and some functions of the interval arithmetic (not finished).
+
 ## lud.lisp
 The LU decomposition.
 
