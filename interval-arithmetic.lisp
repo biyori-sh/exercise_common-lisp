@@ -6,7 +6,7 @@
 (defparameter *default-rounding-mode*
   (second (member :rounding-mode (sb-int:get-floating-point-modes))))
 
-
+;; Macro for rounding mode
 (defmacro round-to (mode-keyword &body body)
   "Evaluate BODY in the rounding mode, :POSITIVE-INFINITY or :NEGATIVE-INFINITY or :NEAREST. After that, the rounding-mode returns to *default-rounding-mode*."
   (labels ((rounding-modep (mode)
@@ -36,12 +36,41 @@
        (progn ,@body)
      (sb-int:set-floating-point-modes :ROUNDING-MODE *default-rounding-mode*)))
 
-
+;; Structure type of Interval
+;; check large/small relation between low and high, required functions?
+;; more detailed? positive interval, interval including zero and negative interval
 (defstruct ([] (:constructor [] (low high)))
   "Structure type for the interval arithmetic."
   (low 0.0 :type real)
   (high 0.0 :type real))
 
+
+;; predicates
+(defmethod pointip ((i []))
+  (= ([]-high i) ([]-low i)))
+
+(defmethod wdip ((i []))
+  "Is this a well-defined interval?"
+  (<= ([]-low i) ([]-high i)))
+
+(defmethod elementip ((point number) (i []))
+  (and (wdip i)
+       (<= ([]-low i) point) (<= point ([]-high i))))
+
+(defmethod subintervalip ((subi []) (superi []))
+  (and (wdip subi) (wdip superi)
+       (<= ([]-low superi) ([]-low subi)) (<= ([]-high subi) ([]-high superi))))
+
+(defmethod zeroip ((i []))
+  (and (wdip i) (elementip 0 i)))
+
+(defmethod positiveip ((i []))
+  (and (wdip i) (< 0 ([]-low i))))
+
+(defmethod positiveip ((i []))
+  (and (wdip i) (< ([]-high i) 0)))
+
+;; Unary operators
 (defmethod diameteri ((i []))
   (- ([]-high i) ([]-low i)))
 
@@ -51,21 +80,21 @@
 (defmethod centeri ((i []))
   (/ (- ([]-high i) ([]-low i)) 2.0))
 
-(defmethod pointip ((i []))
-  (= ([]-high i) ([]-low i)))
-
 (defmethod point->interval ((point real))
   ([] point point))
 
-(defmethod elementip ((point number) (i []))
-  (and (<= ([]-low i) point) (<= point ([]-high i))))
+(defmethod absi-min ((i []))
+  (if (zeroip i) 0
+      (min (abs ([]-low i)) (abs ([]-high i)))))
 
-(defmethod subintervalip ((subi []) (superi []))
-  (and (<= ([]-low superi) ([]-low subi)) (<= ([]-high subi) ([]-high superi))))
+(defmethod absi-max ((i []))
+  (max (abs ([]-low i)) (abs ([]-high i))))
 
-(defmethod zeroip ((i []))
-  (elementip 0 i))
+(defmethod absi ((i []))
+  ([] (round-negative (absi-min i))
+      (round-positive (absi-max i))))
 
+;; Binary operators
 (defmethod addi ((i1 []) (i2 []))
   ([] (round-negative (+ ([]-low i1) ([]-low i2)))
       (round-positive (+ ([]-high i1) ([]-high i2)))))
