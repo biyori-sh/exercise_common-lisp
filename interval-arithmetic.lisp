@@ -4,7 +4,7 @@
 ;; https://arxiv.org/pdf/2003.03831.pdf
 
 (defparameter *default-rounding-mode*
-  (second (member :rounding-mode (sb-int:get-floating-point-modes))))
+  (getf (sb-int:get-floating-point-modes) :rounding-mode))
 
 ;; Macro for rounding mode
 (defmacro round-to (mode-keyword &body body)
@@ -46,64 +46,86 @@
 
 
 ;; predicates
-(defmethod pointip ((i []))
+(defmethod pointp ((i []))
   (= ([]-high i) ([]-low i)))
 
-(defmethod wdip ((i []))
+(defmethod wd[]p ((i []))
   "Is this a well-defined interval?"
   (<= ([]-low i) ([]-high i)))
 
-(defmethod elementip ((point number) (i []))
-  (and (wdip i)
+(defmethod elementp ((point number) (i []))
+  (and (wd[]p i)
        (<= ([]-low i) point) (<= point ([]-high i))))
 
-(defmethod subintervalip ((subi []) (superi []))
-  (and (wdip subi) (wdip superi)
+(defmethod sub[]p ((subi []) (superi []))
+  (and (wd[]p subi) (wd[]p superi)
        (<= ([]-low superi) ([]-low subi)) (<= ([]-high subi) ([]-high superi))))
 
-(defmethod zeroip ((i []))
-  (and (wdip i) (elementip 0 i)))
+(defmethod zero[]p ((i []))
+  (and (wd[]p i) (elementp 0 i)))
 
-(defmethod positiveip ((i []))
-  (and (wdip i) (< 0 ([]-low i))))
+(defmethod positive[]p ((i []))
+  (and (wd[]p i) (< 0 ([]-low i))))
 
-(defmethod positiveip ((i []))
-  (and (wdip i) (< ([]-high i) 0)))
+(defmethod negative[]p ((i []))
+  (and (wd[]p i) (< ([]-high i) 0)))
 
 ;; Unary operators
-(defmethod diameteri ((i []))
+(defmethod diameter ((i []))
   (- ([]-high i) ([]-low i)))
 
-(defmethod radiusi ((i []))
+(defmethod radius ((i []))
   (/ (diameteri i) 2.0))
 
-(defmethod centeri ((i []))
+(defmethod center ((i []))
   (/ (- ([]-high i) ([]-low i)) 2.0))
 
-(defmethod point->interval ((point real))
+(defmethod point->[] ((point real))
   ([] point point))
 
-(defmethod absi-min ((i []))
-  (if (zeroip i) 0
+(defmethod abs[]-min ((i []))
+  (if (zero[]p i) 0
       (min (abs ([]-low i)) (abs ([]-high i)))))
 
-(defmethod absi-max ((i []))
+(defmethod abs[]-max ((i []))
   (max (abs ([]-low i)) (abs ([]-high i))))
 
-(defmethod absi ((i []))
-  ([] (round-negative (absi-min i))
-      (round-positive (absi-max i))))
+(defmethod abs[] ((i []))
+  ([] (round-negative (abs[]-min i))
+      (round-positive (abs[]-max i))))
+
+(defmethod abs[] ((i real))
+  (point->[] (abs i)))
 
 ;; Binary operators
-(defmethod addi ((i1 []) (i2 []))
+(defmethod +[] ((i1 []) (i2 []))
   ([] (round-negative (+ ([]-low i1) ([]-low i2)))
       (round-positive (+ ([]-high i1) ([]-high i2)))))
 
-(defmethod subi ((i1 []) (i2 []))
-  ([] (round-negative (- ([]-low i1) ([]-high i2)))
-      (round-positive (- ([]-high i1) ([]-low i2)))))
+(defmethod +[] ((i1 real) (i2 []))
+  ([] (round-negative (+ i1 ([]-low i2)))
+      (round-positive (+ i1 ([]-high i2)))))
 
-(defmethod muli ((i1 []) (i2 []))
+(defmethod +[] ((i1 []) (i2 real))
+  (add[] i2 i1))
+
+(defmethod +[] ((i1 real) (i2 real))
+  ([] (round-negative (+ i1 i2))
+      (round-positive (+ i1 i2))))
+
+(defmethod -[] ((i1 []) (i2 []))
+  (+[] i1 ([] (- ([]-low i2)) (- ([]-high i2)))))
+
+(defmethod -[] ((i1 real) (i2 []))
+  (+[] (point->[] i1) ([] (- ([]-low i2)) (- ([]-high i2)))))
+
+(defmethod -[] ((i1 []) (i2 real))
+  (+[] i1 (point->[] (- i2))))
+
+(defmethod -[] ((i1 real) (i2 real))
+  (+[] (point->[] i1) (point->[] (- i2))))
+
+(defmethod *[] ((i1 []) (i2 []))
   ([] (round-negative
         (min (* ([]-high i1) ([]-high i2))
              (* ([]-low i1) ([]-high i2))
@@ -115,10 +137,27 @@
              (* ([]-high i1) ([]-low i2))
              (* ([]-low i1) ([]-low i2))))))
 
-(defmethod divi ((i1 []) (i2 []))
-  (if (zeroip i2)
+(defmethod /[] ((i1 []) (i2 []))
+  (if (zero[]p i2)
       (error "Not defined for the divisor including zero: ~a~%" i2)
-      (muli i1 ([] (/ 1.0 ([]-high i2)) (/ 1.0 ([]-low i2))))))
+      (*[] i1 ([] (/ 1.0 ([]-high i2)) (/ 1.0 ([]-low i2))))))
+
+(defmethod /[] ((i1 real) (i2 []))
+  (if (zero[]p i2)
+      (error "Not defined for the divisor including zero: ~a~%" i2)
+      (*[] (point->[] i1) ([] (/ 1.0 ([]-high i2)) (/ 1.0 ([]-low i2))))))
+
+(defmethod /[] ((i1 []) (i2 real))
+  (*[] i1 (point->[] (/ 1.0 i2))))
+
+(defmethod /[] ((i1 real) (i2 real))
+  (*[] (point->[] i1) (point->[] (/ 1.0 i2))))
+
+
+;; (let ((result ([] 0 0)))
+;;   (dotimes (i 100 result)
+;;     (setf result (+[] 0.1 result))))
+;; => #S([] :LOW 9.999982 :HIGH 10.000027)
 
 ;; (sb-int:get-floating-point-modes)
 ;; (sb-int:set-floating-point-modes :ROUNDING-MODE :POSITIVE-INFINITY)
